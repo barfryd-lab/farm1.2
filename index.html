@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ניהול משק חקלאי - גרסה יציבה v6</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Assistant', sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; padding: 0; }
+        .tab-active { border-bottom: 4px solid #059669; color: #059669; font-weight: 800; }
+        .hidden { display: none !important; }
+        .card { background: white; border-radius: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; margin-bottom: 1rem; }
+        input, select, textarea { border: 1px solid #cbd5e1; border-radius: 0.6rem; padding: 0.7rem; width: 100%; outline: none; box-sizing: border-box; }
+        .btn-primary { background-color: #059669; color: white; font-weight: 700; padding: 0.8rem; border-radius: 0.75rem; border: none; cursor: pointer; width: 100%; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="min-h-screen pb-24">
+
+    <!-- Header -->
+    <header class="bg-emerald-900 text-white p-4 shadow-xl sticky top-0 z-50">
+        <div class="container mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="text-lg font-extrabold">ניהול משק חקלאי</h1>
+                <p id="header-date" class="text-[10px] opacity-70 font-medium"></p>
+            </div>
+            <div class="flex bg-emerald-950/50 p-1 rounded-xl border border-emerald-700/30">
+                <button onclick="changeView('today')" id="v-today" class="px-3 py-1 rounded-lg text-xs font-bold bg-emerald-500 shadow-md">היום</button>
+                <button onclick="changeView('tomorrow')" id="v-tomorrow" class="px-3 py-1 rounded-lg text-xs font-bold">מחר</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="bg-white border-b sticky top-[60px] z-40 shadow-sm overflow-x-auto no-scrollbar">
+        <div class="container mx-auto flex whitespace-nowrap px-2">
+            <button onclick="switchTab('daily')" id="tab-daily" class="px-4 py-4 text-center tab-active font-bold">סידור</button>
+            <button onclick="switchTab('tasks')" id="tab-tasks" class="px-4 py-4 text-center text-slate-500 font-bold">בנק משימות</button>
+            <button onclick="switchTab('plots')" id="tab-plots" class="px-4 py-4 text-center text-slate-500 font-bold">שטחים ומפה</button>
+            <button onclick="switchTab('workers')" id="tab-workers" class="px-4 py-4 text-center text-slate-500 font-bold">עובדים</button>
+            <button onclick="switchTab('summary')" id="tab-summary" class="px-4 py-4 text-center text-slate-500 font-bold">סיכום ועלויות</button>
+        </div>
+    </nav>
+
+    <main class="container mx-auto p-4 max-w-2xl">
+        
+        <!-- SECTION: DAILY SCHEDULE -->
+        <section id="sec-daily" class="space-y-4">
+            <div id="schedule-container" class="grid gap-4"></div>
+            <div class="card p-4 space-y-3">
+                <button onclick="sendWhatsApp()" class="btn-primary bg-green-600">שלח סידור ב-WhatsApp</button>
+                <button onclick="resetDay()" class="w-full text-slate-400 text-xs font-bold py-2 bg-transparent border-none cursor-pointer">איפוס סידור ליום זה</button>
+            </div>
+        </section>
+
+        <!-- SECTION: TASK BANK -->
+        <section id="sec-tasks" class="hidden space-y-4">
+            <div class="card p-4">
+                <h2 class="text-md font-bold mb-3 text-emerald-800">הוספת משימה לבנק</h2>
+                <div class="flex gap-2">
+                    <input type="text" id="new-bank-task" placeholder="תיאור המשימה">
+                    <button onclick="addToTaskBank()" class="bg-emerald-600 text-white px-4 rounded-xl font-bold border-none cursor-pointer">הוסף</button>
+                </div>
+            </div>
+            <div id="task-bank-list" class="grid gap-2"></div>
+        </section>
+
+        <!-- SECTION: PLOTS & MAP -->
+        <section id="sec-plots" class="hidden space-y-4">
+            <div class="flex justify-between items-center mb-2">
+                <h2 class="text-md font-bold text-emerald-800">מפת ערוגות וניהול שטחים</h2>
+                <button onclick="openPlotModal()" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold border-none cursor-pointer shadow-sm">שטח חדש +</button>
+            </div>
+            
+            <!-- BED MAP DISPLAY -->
+            <div id="bed-map-visual" class="space-y-4 mb-6"></div>
+            <div id="plots-list" class="grid gap-2"></div>
+        </section>
+
+        <!-- SECTION: WORKERS -->
+        <section id="sec-workers" class="hidden space-y-4">
+            <div class="flex justify-between items-center mb-2">
+                <h2 class="text-md font-bold text-emerald-800">ניהול עובדים</h2>
+                <button onclick="openWorkerModal()" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold border-none cursor-pointer">עובד חדש +</button>
+            </div>
+            <div id="workers-list" class="grid gap-2"></div>
+        </section>
+
+        <!-- SECTION: SUMMARY -->
+        <section id="sec-summary" class="hidden space-y-4">
+            <div class="card p-4 space-y-3">
+                <h2 class="text-md font-bold text-emerald-800">סיכום ועלויות</h2>
+                <div class="grid grid-cols-2 gap-2">
+                    <div><label class="text-[10px] font-bold">מתאריך</label><input type="date" id="cost-from" onchange="renderSummary()"></div>
+                    <div><label class="text-[10px] font-bold">עד תאריך</label><input type="date" id="cost-to" onchange="renderSummary()"></div>
+                </div>
+                <div class="bg-emerald-50 p-4 rounded-xl text-center border border-emerald-100">
+                    <div class="text-[10px] text-emerald-800 font-bold uppercase">עלות שכר מוערכת</div>
+                    <div id="total-cost-val" class="text-2xl font-black text-emerald-700">₪0</div>
+                </div>
+            </div>
+            <div class="card p-4">
+                <h2 class="text-md font-bold mb-3 text-emerald-800">סטטוס ביצוע</h2>
+                <div id="execution-summary" class="divide-y text-sm"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- MODALS -->
+    <div id="modal-overlay" class="hidden fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
+        
+        <!-- Plot Modal -->
+        <div id="plot-modal" class="hidden bg-white w-full max-w-sm rounded-2xl p-6 max-h-[90vh] overflow-y-auto">
+            <h3 class="font-bold mb-4 text-emerald-900">ניהול שטח וערוגות</h3>
+            <div class="space-y-3">
+                <input type="hidden" id="p-id">
+                <input type="text" id="p-name" placeholder="שם השטח">
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="number" id="p-size" placeholder="דונם">
+                    <input type="number" id="p-beds-total" placeholder="סה''כ ערוגות">
+                </div>
+                
+                <div class="bg-slate-50 p-3 rounded-xl space-y-2">
+                    <p class="text-[10px] font-bold text-slate-500 uppercase">חלוקת ערוגות:</p>
+                    <div id="beds-config-list" class="space-y-2"></div>
+                    <button onclick="addCropConfig()" class="text-[10px] text-emerald-600 font-bold bg-white border border-emerald-100 px-2 py-1 rounded-md shadow-sm">+ הוסף גידול</button>
+                </div>
+            </div>
+            <div class="flex gap-2 mt-6">
+                <button onclick="savePlot()" class="btn-primary">שמור</button>
+                <button id="p-del-btn" onclick="deletePlot()" class="bg-red-50 text-red-600 px-4 rounded-xl hidden border-none cursor-pointer font-bold">מחק</button>
+                <button onclick="closeModals()" class="bg-slate-100 px-4 rounded-xl border-none cursor-pointer font-bold">ביטול</button>
+            </div>
+        </div>
+
+        <!-- Worker Modal -->
+        <div id="worker-modal" class="hidden bg-white w-full max-w-sm rounded-2xl p-6">
+            <h3 class="font-bold mb-4 text-emerald-900">פרטי עובד</h3>
+            <div class="space-y-3">
+                <input type="hidden" id="w-id">
+                <input type="text" id="w-name" placeholder="שם העובד">
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="number" id="w-wage" placeholder="שכר (₪)">
+                    <select id="w-status"><option value="active">פעיל</option><option value="inactive">לא פעיל</option></select>
+                </div>
+                <textarea id="w-notes" placeholder="הכשרות והערות" class="h-20"></textarea>
+            </div>
+            <div class="flex gap-2 mt-6">
+                <button onclick="saveWorker()" class="btn-primary">שמור</button>
+                <button id="w-del-btn" onclick="deleteWorker()" class="bg-red-50 text-red-600 px-4 rounded-xl hidden border-none cursor-pointer font-bold">מחק</button>
+                <button onclick="closeModals()" class="bg-slate-100 px-4 rounded-xl border-none cursor-pointer font-bold">ביטול</button>
+            </div>
+        </div>
+
+        <!-- Mission Modal -->
+        <div id="mission-modal" class="hidden bg-white w-full max-w-sm rounded-2xl p-6">
+            <h3 class="font-bold mb-4 text-emerald-900 text-center">משימה לסידור</h3>
+            <div class="space-y-3">
+                <input type="hidden" id="m-plot-id">
+                <select id="m-bank-select" onchange="document.getElementById('m-text').value = this.value"><option value="">בחר מהבנק...</option></select>
+                <input type="text" id="m-text" placeholder="תיאור המשימה">
+                <div class="grid grid-cols-2 gap-2">
+                    <select id="m-crop-select"></select>
+                    <select id="m-status"><option value="not_started">לא בוצע</option><option value="partial">חלקית</option><option value="completed">בוצע מלא</option></select>
+                </div>
+                <input type="number" id="m-hours" placeholder="מס' שעות">
+            </div>
+            <div class="flex gap-2 mt-6">
+                <button onclick="saveMission()" class="btn-primary">שמור</button>
+                <button onclick="closeModals()" class="bg-slate-100 px-4 rounded-xl border-none cursor-pointer font-bold">ביטול</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Use v6 for data stability
+        let state = {
+            workers: JSON.parse(localStorage.getItem('f_v6_workers') || '[]'),
+            plots: JSON.parse(localStorage.getItem('f_v6_plots') || '[]'),
+            schedule: JSON.parse(localStorage.getItem('f_v6_schedule') || '{}'),
+            taskBank: JSON.parse(localStorage.getItem('f_v6_bank') || '[]'),
+            viewOffset: 0
+        };
+
+        let tempBedConfig = [];
+
+        const sync = () => {
+            localStorage.setItem('f_v6_workers', JSON.stringify(state.workers));
+            localStorage.setItem('f_v6_plots', JSON.stringify(state.plots));
+            localStorage.setItem('f_v6_schedule', JSON.stringify(state.schedule));
+            localStorage.setItem('f_v6_bank', JSON.stringify(state.taskBank));
+            render();
+        };
+
+        const getDateStr = (off) => {
+            const d = new Date(); d.setDate(d.getDate() + off);
+            return d.toISOString().split('T')[0];
+        };
+
+        const getColor = (name) => {
+            if(!name || name === 'ריק') return '#cbd5e1';
+            let hash = 0; for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            return ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'][Math.abs(hash) % 7];
+        };
+
+        // Navigation
+        function switchTab(t) {
+            ['daily', 'tasks', 'plots', 'workers', 'summary'].forEach(s => {
+                const el = document.getElementById('sec-' + s);
+                const btn = document.getElementById('tab-' + s);
+                if(el) el.classList.add('hidden');
+                if(btn) btn.className = 'px-4 py-4 text-center text-slate-500 font-bold';
+            });
+            const activeEl = document.getElementById('sec-' + t);
+            const activeBtn = document.getElementById('tab-' + t);
+            if(activeEl) activeEl.classList.remove('hidden');
+            if(activeBtn) activeBtn.className = 'px-4 py-4 text-center tab-active font-bold';
+            if(t === 'summary') renderSummary();
+            render();
+        }
+
+        function changeView(v) {
+            state.viewOffset = (v === 'today' ? 0 : 1);
+            document.getElementById('v-today').className = v === 'today' ? 'px-3 py-1 rounded-lg text-xs font-bold bg-emerald-500 shadow-md' : 'px-3 py-1 rounded-lg text-xs font-bold';
+            document.getElementById('v-tomorrow').className = v === 'tomorrow' ? 'px-3 py-1 rounded-lg text-xs font-bold bg-emerald-500 shadow-md' : 'px-3 py-1 rounded-lg text-xs font-bold';
+            render();
+        }
+
+        function closeModals() {
+            document.getElementById('modal-overlay').classList.add('hidden');
+            ['worker-modal', 'plot-modal', 'mission-modal'].forEach(m => document.getElementById(m).classList.add('hidden'));
+        }
+
+        // Plot Bed Logic
+        function addCropConfig() {
+            tempBedConfig.push({ crop: '', count: 1 });
+            renderBedsEditor();
+        }
+
+        function renderBedsEditor() {
+            const list = document.getElementById('beds-config-list');
+            list.innerHTML = tempBedConfig.map((item, idx) => `
+                <div class="flex gap-2 items-center">
+                    <input type="text" placeholder="גידול" value="${item.crop}" onchange="tempBedConfig[${idx}].crop = this.value" class="text-xs p-1">
+                    <input type="number" placeholder="כמות" value="${item.count}" onchange="tempBedConfig[${idx}].count = parseInt(this.value)||0" class="text-xs p-1 w-16">
+                    <button onclick="tempBedConfig.splice(${idx}, 1); renderBedsEditor();" class="text-red-500">✕</button>
+                </div>
+            `).join('');
+        }
+
+        // CRUD Workers
+        function openWorkerModal(id = null) {
+            document.getElementById('modal-overlay').classList.remove('hidden');
+            document.getElementById('worker-modal').classList.remove('hidden');
+            const delBtn = document.getElementById('w-del-btn');
+            if(id) {
+                const w = state.workers.find(x => x.id == id);
+                document.getElementById('w-id').value = id;
+                document.getElementById('w-name').value = w.name;
+                document.getElementById('w-wage').value = w.wage;
+                document.getElementById('w-status').value = w.status;
+                document.getElementById('w-notes').value = w.notes;
+                delBtn.classList.remove('hidden');
+            } else {
+                document.getElementById('w-id').value = '';
+                document.getElementById('w-name').value = '';
+                document.getElementById('w-wage').value = '';
+                document.getElementById('w-status').value = 'active';
+                document.getElementById('w-notes').value = '';
+                delBtn.classList.add('hidden');
+            }
+        }
+
+        function saveWorker() {
+            const id = document.getElementById('w-id').value;
+            const w = { id: id || Date.now(), name: document.getElementById('w-name').value, wage: document.getElementById('w-wage').value, status: document.getElementById('w-status').value, notes: document.getElementById('w-notes').value };
+            if(!w.name) return;
+            if(id) state.workers = state.workers.map(x => x.id == id ? w : x);
+            else state.workers.push(w);
+            sync(); closeModals();
+        }
+
+        function deleteWorker() {
+            if(confirm("למחוק עובד?")) { state.workers = state.workers.filter(x => x.id != document.getElementById('w-id').value); sync(); closeModals(); }
+        }
+
+        // CRUD Plots
+        function openPlotModal(id = null) {
+            document.getElementById('modal-overlay').classList.remove('hidden');
+            document.getElementById('plot-modal').classList.remove('hidden');
+            const delBtn = document.getElementById('p-del-btn');
+            if(id) {
+                const p = state.plots.find(x => x.id == id);
+                document.getElementById('p-id').value = id;
+                document.getElementById('p-name').value = p.name;
+                document.getElementById('p-size').value = p.size;
+                document.getElementById('p-beds-total').value = p.bedsTotal;
+                tempBedConfig = JSON.parse(JSON.stringify(p.bedConfig || []));
+                delBtn.classList.remove('hidden');
+            } else {
+                document.getElementById('p-id').value = '';
+                document.getElementById('p-name').value = '';
+                document.getElementById('p-size').value = '';
+                document.getElementById('p-beds-total').value = '';
+                tempBedConfig = [];
+                delBtn.classList.add('hidden');
+            }
+            renderBedsEditor();
+        }
+
+        function savePlot() {
+            const id = document.getElementById('p-id').value;
+            const p = { 
+                id: id || Date.now(), 
+                name: document.getElementById('p-name').value, 
+                size: document.getElementById('p-size').value, 
+                bedsTotal: parseInt(document.getElementById('p-beds-total').value) || 0,
+                bedConfig: tempBedConfig.filter(c => c.crop && c.count > 0)
+            };
+            if(!p.name) return;
+            if(id) state.plots = state.plots.map(x => x.id == id ? p : x);
+            else state.plots.push(p);
+            sync(); closeModals();
+        }
+
+        function deletePlot() {
+            if(confirm("למחוק שטח?")) { state.plots = state.plots.filter(x => x.id != document.getElementById('p-id').value); sync(); closeModals(); }
+        }
+
+        // Task Bank
+        function addToTaskBank() {
+            const val = document.getElementById('new-bank-task').value;
+            if(val) { state.taskBank.push(val); document.getElementById('new-bank-task').value = ''; sync(); }
+        }
+
+        // Mission Logic
+        function openMissionModal(pId) {
+            const plot = state.plots.find(x => x.id == pId);
+            const date = getDateStr(state.viewOffset);
+            if(!state.schedule[date]) state.schedule[date] = {};
+            const s = state.schedule[date][pId] || { workers: [], mission: '', crop: '', status: 'not_started', hours: 0 };
+            
+            document.getElementById('modal-overlay').classList.remove('hidden');
+            document.getElementById('mission-modal').classList.remove('hidden');
+            document.getElementById('m-plot-id').value = pId;
+            document.getElementById('m-text').value = s.mission;
+            document.getElementById('m-status').value = s.status || 'not_started';
+            document.getElementById('m-hours').value = s.hours || '';
+            
+            document.getElementById('m-bank-select').innerHTML = '<option value="">בחר מהבנק...</option>' + state.taskBank.map(t => `<option value="${t}">${t}</option>`).join('');
+            const crops = plot.bedConfig.map(c => c.crop);
+            document.getElementById('m-crop-select').innerHTML = '<option value="">כללי</option>' + crops.map(c => `<option value="${c}" ${s.crop === c ? 'selected' : ''}>${c}</option>`).join('');
+        }
+
+        function saveMission() {
+            const pId = document.getElementById('m-plot-id').value;
+            const date = getDateStr(state.viewOffset);
+            if(!state.schedule[date][pId]) state.schedule[date][pId] = { workers: [] };
+            Object.assign(state.schedule[date][pId], {
+                mission: document.getElementById('m-text').value,
+                crop: document.getElementById('m-crop-select').value,
+                status: document.getElementById('m-status').value,
+                hours: parseFloat(document.getElementById('m-hours').value) || 0
+            });
+            sync(); closeModals();
+        }
+
+        function toggleAssign(pId, wId) {
+            const date = getDateStr(state.viewOffset);
+            if(!state.schedule[date]) state.schedule[date] = {};
+            if(!state.schedule[date][pId]) state.schedule[date][pId] = { workers: [], mission: '', crop: '', status: 'not_started', hours: 0 };
+            const list = state.schedule[date][pId].workers;
+            const idx = list.indexOf(wId);
+            if(idx > -1) list.splice(idx, 1); else list.push(wId);
+            sync();
+        }
+
+        function resetDay() { if(confirm("לאפס סידור?")) { state.schedule[getDateStr(state.viewOffset)] = {}; sync(); } }
+
+        function renderSummary() {
+            const from = document.getElementById('cost-from').value;
+            const to = document.getElementById('cost-to').value;
+            if(!from || !to) return;
+            let total = 0, html = '';
+            Object.keys(state.schedule).forEach(date => {
+                if(date >= from && date <= to) {
+                    Object.keys(state.schedule[date]).forEach(pId => {
+                        const s = state.schedule[date][pId], p = state.plots.find(x => x.id == pId);
+                        if(!p) return;
+                        state.workers.filter(w => s.workers.includes(w.id)).forEach(w => total += (parseFloat(w.wage) || 0) * (s.hours || 0));
+                        if(s.mission) {
+                            const lbl = { 'not_started': '❌', 'partial': '⚠️', 'completed': '✅' }[s.status];
+                            html += `<div class="py-2 flex justify-between items-center border-b">
+                                <div class="flex-1">
+                                    <div class="font-bold text-[11px]">${date} | ${p.name}</div>
+                                    <div class="text-[10px] text-slate-500 truncate max-w-[150px]">${s.mission}</div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <select onchange="updateTaskStatus('${date}', '${pId}', this.value)" class="text-[10px] p-1 border rounded bg-white w-24">
+                                        <option value="not_started" ${s.status === 'not_started' ? 'selected' : ''}>לא בוצע</option>
+                                        <option value="partial" ${s.status === 'partial' ? 'selected' : ''}>חלקית</option>
+                                        <option value="completed" ${s.status === 'completed' ? 'selected' : ''}>בוצע מלא</option>
+                                    </select>
+                                    <span class="font-bold w-4 text-center">${lbl}</span>
+                                </div>
+                            </div>`;
+                        }
+                    });
+                }
+            });
+            document.getElementById('total-cost-val').innerText = `₪${Math.round(total).toLocaleString()}`;
+            document.getElementById('execution-summary').innerHTML = html || '<p class="text-center py-4 text-slate-400">אין נתונים</p>';
+        }
+
+        function updateTaskStatus(date, pId, newStatus) {
+            if(!state.schedule[date] || !state.schedule[date][pId]) return;
+            state.schedule[date][pId].status = newStatus;
+            sync();
+            renderSummary();
+        }
+
+        // MAIN RENDER
+        function render() {
+            const date = getDateStr(state.viewOffset);
+            document.getElementById('header-date').innerText = new Date(date).toLocaleDateString('he-IL', {weekday:'long', day:'numeric', month:'long'});
+            const activeW = state.workers.filter(w => w.status === 'active');
+            const currentSched = state.schedule[date] || {};
+
+            // Schedule Container
+            document.getElementById('schedule-container').innerHTML = state.plots.map(p => {
+                const s = currentSched[p.id] || { workers: [], mission: '', crop: '', status: 'not_started' };
+                const border = { 'not_started': 'border-slate-200', 'partial': 'border-orange-400', 'completed': 'border-green-500' }[s.status];
+                return `<div class="card border-t-4 ${border} overflow-hidden">
+                    <div class="p-3 bg-slate-50 flex justify-between items-center border-b">
+                        <div class="font-bold text-xs">${p.name} <span class="opacity-50 text-[9px] uppercase">${p.size || 0}ד' | ${p.bedsTotal || 0}ע'</span></div>
+                        <button onclick="openMissionModal(${p.id})" class="text-[9px] font-bold text-emerald-700 bg-white px-2 py-1 rounded border shadow-sm">עריכה</button>
+                    </div>
+                    <div class="p-3 space-y-2">
+                        ${s.mission ? `<div class="text-xs font-medium"><span class="text-emerald-700 font-black">${s.crop ? '['+s.crop+']' : ''}</span> ${s.mission}</div>` : ''}
+                        <div class="flex flex-wrap gap-1">
+                            ${activeW.map(w => `<button onclick="toggleAssign(${p.id}, ${w.id})" class="px-2 py-1.5 rounded-lg text-[10px] border transition-all ${s.workers.includes(w.id) ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-500 border-slate-200'}">${w.name}</button>`).join('')}
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+
+            // Bed Map Visual
+            document.getElementById('bed-map-visual').innerHTML = state.plots.map(p => {
+                const total = p.bedsTotal || 0;
+                if(total === 0) return '';
+                let current = 0;
+                let bars = (p.bedConfig || []).map(c => {
+                    const w = (c.count / total) * 100; current += c.count;
+                    return `<div style="width:${w}%; background-color:${getColor(c.crop)};" class="h-full border-l border-white/20 flex items-center justify-center overflow-hidden"><span class="text-[7px] font-bold text-white px-0.5">${c.crop}</span></div>`;
+                }).join('');
+                if(current < total) bars += `<div style="width:${((total-current)/total)*100}%;" class="h-full bg-slate-100"></div>`;
+                return `<div class="space-y-1">
+                    <div class="flex justify-between px-1"><span class="text-[10px] font-bold">${p.name}</span><span class="text-[8px] opacity-40">${total} ע'</span></div>
+                    <div class="w-full h-6 bg-slate-50 rounded-md overflow-hidden flex border border-slate-200">${bars}</div>
+                </div>`;
+            }).join('');
+
+            // Management Lists
+            document.getElementById('workers-list').innerHTML = state.workers.map(w => `<div class="card p-3 flex justify-between items-center border-r-4 ${w.status === 'active' ? 'border-emerald-500' : 'border-slate-300'} text-xs">
+                <div><div class="font-bold">${w.name}</div><div>₪${w.wage || 0}/ש' | ${w.notes || ''}</div></div>
+                <button onclick="openWorkerModal(${w.id})" class="text-emerald-600 font-bold">ערוך</button>
+            </div>`).join('');
+
+            document.getElementById('plots-list').innerHTML = state.plots.map(p => `<div class="card p-3 flex justify-between items-center border-r-4 border-emerald-500 text-xs">
+                <div><div class="font-bold">${p.name}</div><div>${p.size}ד' | ${p.bedsTotal}ע' | ${(p.bedConfig||[]).map(c=>c.crop).join(',')}</div></div>
+                <button onclick="openPlotModal(${p.id})" class="text-emerald-600 font-bold">ערוך</button>
+            </div>`).join('');
+
+            document.getElementById('task-bank-list').innerHTML = state.taskBank.map((t, i) => `<div class="card p-2 flex justify-between items-center text-xs"><span>${t}</span><button onclick="state.taskBank.splice(${i}, 1); sync();" class="text-red-500">מחק</button></div>`).join('');
+        }
+
+        function sendWhatsApp() {
+            const date = getDateStr(state.viewOffset);
+            const sched = state.schedule[date] || {};
+            let msg = `*סידור עבודה - ${new Date(date).toLocaleDateString('he-IL')}*\n\n`;
+            state.plots.forEach(p => {
+                const s = sched[p.id];
+                if(s && (s.workers.length > 0 || s.mission)) {
+                    msg += `📍 *${p.name}* ${s.crop ? '['+s.crop+']' : ''}\n📝 ${s.mission || '-'}\n👥 ${state.workers.filter(w => s.workers.includes(w.id)).map(w => w.name).join(', ') || '-'}\n\n`;
+                }
+            });
+            window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
+        }
+
+        // Init Dates
+        const todayStr = new Date().toISOString().split('T')[0];
+        document.getElementById('cost-from').value = todayStr;
+        document.getElementById('cost-to').value = todayStr;
+        sync();
+    </script>
+</body>
+</html>
