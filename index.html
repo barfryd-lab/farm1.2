@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ניהול משק חקלאי - גרסה יציבה v8</title>
+    <title>ניהול משק חקלאי - גרסה יציבה v9</title>
 
     <meta name="theme-color" content="#064e3b">
     <link rel="manifest" href="manifest.json">
@@ -28,6 +28,7 @@
         input, select, textarea { border: 1px solid #cbd5e1; border-radius: 0.6rem; padding: 0.7rem; width: 100%; outline: none; box-sizing: border-box; }
         .btn-primary { background-color: #059669; color: white; font-weight: 700; padding: 0.8rem; border-radius: 0.75rem; border: none; cursor: pointer; width: 100%; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
+        input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.8; filter: invert(1); }
     </style>
 </head>
 <body class="min-h-screen pb-24">
@@ -38,9 +39,10 @@
                 <h1 class="text-lg font-extrabold">ניהול משק חקלאי</h1>
                 <p id="header-date" class="text-[10px] opacity-70 font-medium"></p>
             </div>
-            <div class="flex bg-emerald-950/50 p-1 rounded-xl border border-emerald-700/30">
-                <button onclick="changeView('today')" id="v-today" class="px-3 py-1 rounded-lg text-xs font-bold bg-emerald-500 shadow-md">היום</button>
-                <button onclick="changeView('tomorrow')" id="v-tomorrow" class="px-3 py-1 rounded-lg text-xs font-bold">מחר</button>
+            <div class="flex items-center gap-1 bg-emerald-950/50 p-1 rounded-xl border border-emerald-700/30">
+                <input type="date" id="date-picker" onchange="changeView(this.value)" class="bg-transparent text-white text-[10px] font-bold p-1 border-none outline-none w-[100px]" style="color-scheme: dark;">
+                <button onclick="changeView('today')" id="v-today" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-500 shadow-md">היום</button>
+                <button onclick="changeView('tomorrow')" id="v-tomorrow" class="px-2 py-1 rounded-lg text-[10px] font-bold">מחר</button>
             </div>
         </div>
     </header>
@@ -52,7 +54,7 @@
             <button onclick="switchTab('tasks')" id="tab-tasks" class="px-4 py-4 text-center text-slate-500 font-bold">בנק משימות</button>
             <button onclick="switchTab('plots')" id="tab-plots" class="px-4 py-4 text-center text-slate-500 font-bold">שטחים ומפה</button>
             <button onclick="switchTab('workers')" id="tab-workers" class="px-4 py-4 text-center text-slate-500 font-bold">עובדים</button>
-            <button onclick="switchTab('summary')" id="tab-summary" class="px-4 py-4 text-center text-slate-500 font-bold">סיכום ועלויות</button>
+            <button onclick="switchTab('summary')" id="tab-summary" class="px-4 py-4 text-center text-slate-500 font-bold">סיכום</button>
         </div>
     </nav>
 
@@ -62,6 +64,7 @@
             <div id="schedule-container" class="grid gap-4"></div>
             <div class="card p-4 space-y-3">
                 <button onclick="sendWhatsApp()" class="btn-primary bg-green-600">שלח סידור ב-WhatsApp</button>
+                <button onclick="duplicateYesterday()" class="w-full text-emerald-700 text-xs font-bold py-2 bg-emerald-50 rounded-xl border border-emerald-200 cursor-pointer shadow-sm">שכפל סידור מאתמול 📋</button>
                 <button onclick="resetDay()" class="w-full text-slate-400 text-xs font-bold py-2 bg-transparent border-none cursor-pointer">איפוס סידור ליום זה</button>
             </div>
         </section>
@@ -87,7 +90,6 @@
                 <h2 class="text-md font-bold text-emerald-800">מפת ערוגות וניהול שטחים</h2>
                 <button onclick="openPlotModal()" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold border-none cursor-pointer shadow-sm">שטח חדש +</button>
             </div>
-            
             <div id="bed-map-visual" class="space-y-4 mb-6"></div>
             <div id="plots-list" class="grid gap-2"></div>
         </section>
@@ -130,7 +132,6 @@
                     <input type="number" id="p-size" placeholder="דונם">
                     <input type="number" id="p-beds-total" placeholder="סה''כ ערוגות">
                 </div>
-                
                 <div class="bg-slate-50 p-3 rounded-xl space-y-2">
                     <p class="text-[10px] font-bold text-slate-500 uppercase">חלוקת ערוגות:</p>
                     <div id="beds-config-list" class="space-y-2"></div>
@@ -186,7 +187,6 @@
                 <button onclick="closeModals()" class="text-slate-400 text-lg font-bold">✕</button>
             </div>
             <div id="map-grid" class="grid gap-2"></div>
-            
             <div class="mt-6 flex justify-end">
                 <button onclick="closeModals()" class="bg-slate-100 px-4 py-2 rounded-xl border-none cursor-pointer font-bold">סגור</button>
             </div>
@@ -194,6 +194,17 @@
     </div>
 
     <script>
+        const getLocalIsoDate = (d = new Date()) => {
+            const offset = d.getTimezoneOffset() * 60000;
+            return new Date(d.getTime() - offset).toISOString().split('T')[0];
+        };
+        const getTodayStr = () => getLocalIsoDate();
+        const addDays = (dateStr, days) => {
+            const d = new Date(dateStr);
+            d.setDate(d.getDate() + days);
+            return getLocalIsoDate(d);
+        };
+
         const defaultWorkers = [
             { id: 101, name: "mood", wage: "", status: "active", notes: "מוד | PHONCHAI CHAPAKDI | דרכון: AC2548580 | משימות: נורית" },
             { id: 102, name: "nan", wage: "", status: "active", notes: "נען | ANAN GAEWPILA | דרכון: AC2532650 | עבודה עם דבורים" },
@@ -211,7 +222,6 @@
             { id: 114, name: "mos", wage: "", status: "active", notes: "מוס | apisit ubuabon | דרכון: AD1285326 | משימות: נורית" }
         ];
 
-        // נבדוק האם רשימת העובדים בטלפון ריקה, אם כן - נזריק את ברירת המחדל
         let storedWorkers = localStorage.getItem('f_v8_workers');
         if (!storedWorkers || JSON.parse(storedWorkers).length === 0) {
             let oldWorkers = localStorage.getItem('f_v7_workers') || localStorage.getItem('f_v6_workers');
@@ -225,10 +235,10 @@
 
         let state = {
             workers: JSON.parse(localStorage.getItem('f_v8_workers')),
-            plots: JSON.parse(localStorage.getItem('f_v8_plots') || localStorage.getItem('f_v7_plots') || localStorage.getItem('f_v6_plots') || '[]'),
-            schedule: JSON.parse(localStorage.getItem('f_v8_schedule') || localStorage.getItem('f_v7_schedule') || localStorage.getItem('f_v6_schedule') || '{}'),
-            taskBank: JSON.parse(localStorage.getItem('f_v8_bank') || localStorage.getItem('f_v7_bank') || localStorage.getItem('f_v6_bank') || '[]'),
-            viewOffset: 0
+            plots: JSON.parse(localStorage.getItem('f_v8_plots') || localStorage.getItem('f_v7_plots') || '[]'),
+            schedule: JSON.parse(localStorage.getItem('f_v8_schedule') || localStorage.getItem('f_v7_schedule') || '{}'),
+            taskBank: JSON.parse(localStorage.getItem('f_v8_bank') || localStorage.getItem('f_v7_bank') || '[]'),
+            currentDate: getTodayStr()
         };
 
         let tempBedConfig = [];
@@ -239,11 +249,6 @@
             localStorage.setItem('f_v8_schedule', JSON.stringify(state.schedule));
             localStorage.setItem('f_v8_bank', JSON.stringify(state.taskBank));
             render();
-        };
-
-        const getDateStr = (off) => {
-            const d = new Date(); d.setDate(d.getDate() + off);
-            return d.toISOString().split('T')[0];
         };
 
         const getColor = (name) => {
@@ -270,10 +275,30 @@
         }
 
         function changeView(v) {
-            state.viewOffset = (v === 'today' ? 0 : 1);
-            document.getElementById('v-today').className = v === 'today' ? 'px-3 py-1 rounded-lg text-xs font-bold bg-emerald-500 shadow-md' : 'px-3 py-1 rounded-lg text-xs font-bold';
-            document.getElementById('v-tomorrow').className = v === 'tomorrow' ? 'px-3 py-1 rounded-lg text-xs font-bold bg-emerald-500 shadow-md' : 'px-3 py-1 rounded-lg text-xs font-bold';
+            if (v === 'today') state.currentDate = getTodayStr();
+            else if (v === 'tomorrow') state.currentDate = addDays(getTodayStr(), 1);
+            else state.currentDate = v;
+            
+            document.getElementById('v-today').className = state.currentDate === getTodayStr() ? 'px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-500 shadow-md' : 'px-2 py-1 rounded-lg text-[10px] font-bold';
+            document.getElementById('v-tomorrow').className = state.currentDate === addDays(getTodayStr(), 1) ? 'px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-500 shadow-md' : 'px-2 py-1 rounded-lg text-[10px] font-bold';
+            document.getElementById('date-picker').value = state.currentDate;
+            
             render();
+        }
+
+        function duplicateYesterday() {
+            if(confirm("להעתיק את הסידור של אתמול להיום? זה ידרוס משימות קיימות.")) {
+                const yesterday = addDays(state.currentDate, -1);
+                if(state.schedule[yesterday]) {
+                    state.schedule[state.currentDate] = JSON.parse(JSON.stringify(state.schedule[yesterday]));
+                    Object.keys(state.schedule[state.currentDate]).forEach(pId => {
+                        state.schedule[state.currentDate][pId].status = 'not_started';
+                    });
+                    sync();
+                } else {
+                    alert("אין משימות מאתמול להעתקה.");
+                }
+            }
         }
 
         function closeModals() {
@@ -381,7 +406,7 @@
 
         function openMissionModal(pId) {
             const plot = state.plots.find(x => x.id == pId);
-            const date = getDateStr(state.viewOffset);
+            const date = state.currentDate;
             if(!state.schedule[date]) state.schedule[date] = {};
             const s = state.schedule[date][pId] || { workers: [], mission: '', crop: '', status: 'not_started', hours: 0 };
             
@@ -399,7 +424,7 @@
 
         function saveMission() {
             const pId = document.getElementById('m-plot-id').value;
-            const date = getDateStr(state.viewOffset);
+            const date = state.currentDate;
             if(!state.schedule[date][pId]) state.schedule[date][pId] = { workers: [] };
             Object.assign(state.schedule[date][pId], {
                 mission: document.getElementById('m-text').value,
@@ -411,7 +436,7 @@
         }
 
         function toggleAssign(pId, wId) {
-            const date = getDateStr(state.viewOffset);
+            const date = state.currentDate;
             if(!state.schedule[date]) state.schedule[date] = {};
             if(!state.schedule[date][pId]) state.schedule[date][pId] = { workers: [], mission: '', crop: '', status: 'not_started', hours: 0 };
             const list = state.schedule[date][pId].workers;
@@ -420,7 +445,7 @@
             sync();
         }
 
-        function resetDay() { if(confirm("לאפס סידור?")) { state.schedule[getDateStr(state.viewOffset)] = {}; sync(); } }
+        function resetDay() { if(confirm("לאפס סידור?")) { state.schedule[state.currentDate] = {}; sync(); } }
 
         function renderSummary() {
             const from = document.getElementById('cost-from').value;
@@ -469,7 +494,7 @@
             if (!container) return;
             let html = '';
             for(let i = 0; i < 7; i++) {
-                const dStr = getDateStr(i);
+                const dStr = addDays(getTodayStr(), i);
                 const dateObj = new Date(dStr);
                 const dayName = dateObj.toLocaleDateString('he-IL', {weekday:'long', day:'numeric', month:'numeric'});
                 const sched = state.schedule[dStr] || {};
@@ -483,8 +508,12 @@
                     </div>`;
                 }).join('');
                 if(!dayHtml) dayHtml = '<div class="text-[10px] text-slate-400">אין משימות</div>';
-                html += `<div class="card p-3 mb-2 bg-emerald-50/30">
-                    <div class="font-bold text-emerald-800 border-b border-emerald-100 pb-1 mb-2">${dayName}</div>
+                
+                html += `<div onclick="changeView('${dStr}'); switchTab('daily');" class="card p-3 mb-2 bg-emerald-50/30 cursor-pointer hover:bg-emerald-100 transition-colors">
+                    <div class="font-bold text-emerald-800 border-b border-emerald-100 pb-1 mb-2 flex justify-between items-center">
+                        <span>${dayName}</span>
+                        <span class="text-[9px] bg-emerald-600 text-white px-2 py-0.5 rounded shadow-sm">ערוך סידור ✏️</span>
+                    </div>
                     ${dayHtml}
                 </div>`;
             }
@@ -518,10 +547,11 @@
         }
 
         function render() {
-            const date = getDateStr(state.viewOffset);
-            document.getElementById('header-date').innerText = new Date(date).toLocaleDateString('he-IL', {weekday:'long', day:'numeric', month:'long'});
+            document.getElementById('date-picker').value = state.currentDate;
+            const dateObj = new Date(state.currentDate);
+            document.getElementById('header-date').innerText = dateObj.toLocaleDateString('he-IL', {weekday:'long', day:'numeric', month:'long'});
             const activeW = state.workers.filter(w => w.status === 'active');
-            const currentSched = state.schedule[date] || {};
+            const currentSched = state.schedule[state.currentDate] || {};
             
             document.getElementById('schedule-container').innerHTML = state.plots.map(p => {
                 const s = currentSched[p.id] || { workers: [], mission: '', crop: '', status: 'not_started' };
@@ -572,9 +602,8 @@
         }
 
         function sendWhatsApp() {
-            const date = getDateStr(state.viewOffset);
-            const sched = state.schedule[date] || {};
-            let msg = `*סידור עבודה - ${new Date(date).toLocaleDateString('he-IL')}*\n\n`;
+            const sched = state.schedule[state.currentDate] || {};
+            let msg = `*סידור עבודה - ${new Date(state.currentDate).toLocaleDateString('he-IL')}*\n\n`;
             state.plots.forEach(p => {
                 const s = sched[p.id];
                 if(s && (s.workers.length > 0 || s.mission)) {
@@ -584,10 +613,9 @@
             window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
         }
 
-        const todayStr = new Date().toISOString().split('T')[0];
-        document.getElementById('cost-from').value = todayStr;
-        document.getElementById('cost-to').value = todayStr;
-        sync();
+        document.getElementById('cost-from').value = getTodayStr();
+        document.getElementById('cost-to').value = getTodayStr();
+        changeView('today');
     </script>
 </body>
 </html>
