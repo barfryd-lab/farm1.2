@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ניהול משק חקלאי - גרסה יציבה v7</title>
+    <title>ניהול משק חקלאי - גרסה יציבה v8</title>
 
     <meta name="theme-color" content="#064e3b">
     <link rel="manifest" href="manifest.json">
@@ -194,7 +194,7 @@
     </div>
 
     <script>
-const defaultWorkers = [
+        const defaultWorkers = [
             { id: 101, name: "mood", wage: "", status: "active", notes: "מוד | PHONCHAI CHAPAKDI | דרכון: AC2548580 | משימות: נורית" },
             { id: 102, name: "nan", wage: "", status: "active", notes: "נען | ANAN GAEWPILA | דרכון: AC2532650 | עבודה עם דבורים" },
             { id: 103, name: "bird", wage: "", status: "active", notes: "בירד | PIYAPONG SUWANMALEE | דרכון: AC2671091 | משימות: נורית | רישיון לכלים חקלאיים" },
@@ -211,21 +211,33 @@ const defaultWorkers = [
             { id: 114, name: "mos", wage: "", status: "active", notes: "מוס | apisit ubuabon | דרכון: AD1285326 | משימות: נורית" }
         ];
 
+        // נבדוק האם רשימת העובדים בטלפון ריקה, אם כן - נזריק את ברירת המחדל
+        let storedWorkers = localStorage.getItem('f_v8_workers');
+        if (!storedWorkers || JSON.parse(storedWorkers).length === 0) {
+            let oldWorkers = localStorage.getItem('f_v7_workers') || localStorage.getItem('f_v6_workers');
+            if (oldWorkers && JSON.parse(oldWorkers).length > 0) {
+                storedWorkers = oldWorkers;
+            } else {
+                storedWorkers = JSON.stringify(defaultWorkers);
+            }
+            localStorage.setItem('f_v8_workers', storedWorkers);
+        }
+
         let state = {
-            workers: JSON.parse(localStorage.getItem('f_v7_workers') || localStorage.getItem('f_v6_workers') || JSON.stringify(defaultWorkers)),
-            plots: JSON.parse(localStorage.getItem('f_v7_plots') || localStorage.getItem('f_v6_plots') || '[]'),
-            schedule: JSON.parse(localStorage.getItem('f_v7_schedule') || localStorage.getItem('f_v6_schedule') || '{}'),
-            taskBank: JSON.parse(localStorage.getItem('f_v7_bank') || localStorage.getItem('f_v6_bank') || '[]'),
+            workers: JSON.parse(localStorage.getItem('f_v8_workers')),
+            plots: JSON.parse(localStorage.getItem('f_v8_plots') || localStorage.getItem('f_v7_plots') || localStorage.getItem('f_v6_plots') || '[]'),
+            schedule: JSON.parse(localStorage.getItem('f_v8_schedule') || localStorage.getItem('f_v7_schedule') || localStorage.getItem('f_v6_schedule') || '{}'),
+            taskBank: JSON.parse(localStorage.getItem('f_v8_bank') || localStorage.getItem('f_v7_bank') || localStorage.getItem('f_v6_bank') || '[]'),
             viewOffset: 0
         };
 
         let tempBedConfig = [];
 
         const sync = () => {
-            localStorage.setItem('f_v7_workers', JSON.stringify(state.workers));
-            localStorage.setItem('f_v7_plots', JSON.stringify(state.plots));
-            localStorage.setItem('f_v7_schedule', JSON.stringify(state.schedule));
-            localStorage.setItem('f_v7_bank', JSON.stringify(state.taskBank));
+            localStorage.setItem('f_v8_workers', JSON.stringify(state.workers));
+            localStorage.setItem('f_v8_plots', JSON.stringify(state.plots));
+            localStorage.setItem('f_v8_schedule', JSON.stringify(state.schedule));
+            localStorage.setItem('f_v8_bank', JSON.stringify(state.taskBank));
             render();
         };
 
@@ -456,13 +468,11 @@ const defaultWorkers = [
             const container = document.getElementById('weekly-container');
             if (!container) return;
             let html = '';
-            
             for(let i = 0; i < 7; i++) {
                 const dStr = getDateStr(i);
                 const dateObj = new Date(dStr);
                 const dayName = dateObj.toLocaleDateString('he-IL', {weekday:'long', day:'numeric', month:'numeric'});
                 const sched = state.schedule[dStr] || {};
-                
                 let dayHtml = Object.keys(sched).map(pId => {
                     const s = sched[pId];
                     const p = state.plots.find(x => x.id == pId);
@@ -472,9 +482,7 @@ const defaultWorkers = [
                         ${s.crop ? `<span class="text-[10px] bg-slate-100 px-1 rounded">${s.crop}</span>` : ''}
                     </div>`;
                 }).join('');
-                
                 if(!dayHtml) dayHtml = '<div class="text-[10px] text-slate-400">אין משימות</div>';
-                
                 html += `<div class="card p-3 mb-2 bg-emerald-50/30">
                     <div class="font-bold text-emerald-800 border-b border-emerald-100 pb-1 mb-2">${dayName}</div>
                     ${dayHtml}
@@ -489,10 +497,8 @@ const defaultWorkers = [
             document.getElementById('modal-overlay').classList.remove('hidden');
             document.getElementById('plot-map-modal').classList.remove('hidden');
             document.getElementById('map-title').innerText = `מפת שטח - ${p.name}`;
-            
             let bedsHtml = '';
             let bedNumber = 1;
-            
             (p.bedConfig || []).forEach(c => {
                 const color = getColor(c.crop);
                 for(let i=0; i<c.count; i++) {
@@ -502,14 +508,12 @@ const defaultWorkers = [
                     bedNumber++;
                 }
             });
-            
             while(bedNumber <= p.bedsTotal) {
                  bedsHtml += `<div class="bg-slate-100 text-slate-400 p-2 rounded-lg text-center text-xs border border-slate-200 flex flex-col justify-center min-h-[60px]">
                         ערוגה ${bedNumber}<br><span class="text-[9px] font-normal opacity-80 mt-1">ריק</span>
                     </div>`;
                     bedNumber++;
             }
-            
             document.getElementById('map-grid').innerHTML = `<div class="grid grid-cols-3 gap-2">${bedsHtml}</div>`;
         }
 
@@ -518,7 +522,7 @@ const defaultWorkers = [
             document.getElementById('header-date').innerText = new Date(date).toLocaleDateString('he-IL', {weekday:'long', day:'numeric', month:'long'});
             const activeW = state.workers.filter(w => w.status === 'active');
             const currentSched = state.schedule[date] || {};
-
+            
             document.getElementById('schedule-container').innerHTML = state.plots.map(p => {
                 const s = currentSched[p.id] || { workers: [], mission: '', crop: '', status: 'not_started' };
                 const border = { 'not_started': 'border-slate-200', 'partial': 'border-orange-400', 'completed': 'border-green-500' }[s.status];
@@ -535,7 +539,7 @@ const defaultWorkers = [
                     </div>
                 </div>`;
             }).join('');
-
+            
             document.getElementById('bed-map-visual').innerHTML = state.plots.map(p => {
                 const total = p.bedsTotal || 0;
                 if(total === 0) return '';
@@ -550,12 +554,12 @@ const defaultWorkers = [
                     <div class="w-full h-6 bg-slate-50 rounded-md overflow-hidden flex border border-slate-200">${bars}</div>
                 </div>`;
             }).join('');
-
+            
             document.getElementById('workers-list').innerHTML = state.workers.map(w => `<div class="card p-3 flex justify-between items-center border-r-4 ${w.status === 'active' ? 'border-emerald-500' : 'border-slate-300'} text-xs">
                 <div><div class="font-bold">${w.name}</div><div>₪${w.wage || 0}/ש' | ${w.notes || ''}</div></div>
                 <button onclick="openWorkerModal(${w.id})" class="text-emerald-600 font-bold">ערוך</button>
             </div>`).join('');
-
+            
             document.getElementById('plots-list').innerHTML = state.plots.map(p => `<div class="card p-3 flex justify-between items-center border-r-4 border-emerald-500 text-xs">
                 <div><div class="font-bold">${p.name}</div><div>${p.size}ד' | ${p.bedsTotal}ע' | ${(p.bedConfig||[]).map(c=>c.crop).join(',')}</div></div>
                 <div class="flex gap-2">
@@ -563,7 +567,7 @@ const defaultWorkers = [
                     <button onclick="openPlotModal(${p.id})" class="text-emerald-600 font-bold px-2">ערוך</button>
                 </div>
             </div>`).join('');
-
+            
             document.getElementById('task-bank-list').innerHTML = state.taskBank.map((t, i) => `<div class="card p-2 flex justify-between items-center text-xs"><span>${t}</span><button onclick="state.taskBank.splice(${i}, 1); sync();" class="text-red-500">מחק</button></div>`).join('');
         }
 
