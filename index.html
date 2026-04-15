@@ -47,9 +47,10 @@
     </header>
 
     <!-- Navigation -->
-    <nav class="bg-white border-b sticky top-[60px] z-40 shadow-sm overflow-x-auto no-scrollbar">
+<nav class="bg-white border-b sticky top-[60px] z-40 shadow-sm overflow-x-auto no-scrollbar">
         <div class="container mx-auto flex whitespace-nowrap px-2">
             <button onclick="switchTab('daily')" id="tab-daily" class="px-4 py-4 text-center tab-active font-bold">סידור</button>
+            <button onclick="switchTab('weekly')" id="tab-weekly" class="px-4 py-4 text-center text-slate-500 font-bold">תכנון שבועי</button>
             <button onclick="switchTab('tasks')" id="tab-tasks" class="px-4 py-4 text-center text-slate-500 font-bold">בנק משימות</button>
             <button onclick="switchTab('plots')" id="tab-plots" class="px-4 py-4 text-center text-slate-500 font-bold">שטחים ומפה</button>
             <button onclick="switchTab('workers')" id="tab-workers" class="px-4 py-4 text-center text-slate-500 font-bold">עובדים</button>
@@ -66,6 +67,11 @@
                 <button onclick="sendWhatsApp()" class="btn-primary bg-green-600">שלח סידור ב-WhatsApp</button>
                 <button onclick="resetDay()" class="w-full text-slate-400 text-xs font-bold py-2 bg-transparent border-none cursor-pointer">איפוס סידור ליום זה</button>
             </div>
+        </section>
+
+        <section id="sec-weekly" class="hidden space-y-4">
+            <h2 class="text-md font-bold text-emerald-800">תכנון לשבוע הקרוב</h2>
+            <div id="weekly-container" class="grid gap-3"></div>
         </section>
 
         <!-- SECTION: TASK BANK -->
