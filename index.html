@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ניהול משק חקלאי - גרסה יציבה v6</title>
+    <title>ניהול משק חקלאי - גרסה יציבה v7</title>
 
     <meta name="theme-color" content="#064e3b">
     <link rel="manifest" href="manifest.json">
@@ -32,7 +32,6 @@
 </head>
 <body class="min-h-screen pb-24">
 
-    <!-- Header -->
     <header class="bg-emerald-900 text-white p-4 shadow-xl sticky top-0 z-50">
         <div class="container mx-auto flex justify-between items-center">
             <div>
@@ -46,8 +45,7 @@
         </div>
     </header>
 
-    <!-- Navigation -->
-<nav class="bg-white border-b sticky top-[60px] z-40 shadow-sm overflow-x-auto no-scrollbar">
+    <nav class="bg-white border-b sticky top-[60px] z-40 shadow-sm overflow-x-auto no-scrollbar">
         <div class="container mx-auto flex whitespace-nowrap px-2">
             <button onclick="switchTab('daily')" id="tab-daily" class="px-4 py-4 text-center tab-active font-bold">סידור</button>
             <button onclick="switchTab('weekly')" id="tab-weekly" class="px-4 py-4 text-center text-slate-500 font-bold">תכנון שבועי</button>
@@ -60,7 +58,6 @@
 
     <main class="container mx-auto p-4 max-w-2xl">
         
-        <!-- SECTION: DAILY SCHEDULE -->
         <section id="sec-daily" class="space-y-4">
             <div id="schedule-container" class="grid gap-4"></div>
             <div class="card p-4 space-y-3">
@@ -74,7 +71,6 @@
             <div id="weekly-container" class="grid gap-3"></div>
         </section>
 
-        <!-- SECTION: TASK BANK -->
         <section id="sec-tasks" class="hidden space-y-4">
             <div class="card p-4">
                 <h2 class="text-md font-bold mb-3 text-emerald-800">הוספת משימה לבנק</h2>
@@ -86,19 +82,16 @@
             <div id="task-bank-list" class="grid gap-2"></div>
         </section>
 
-        <!-- SECTION: PLOTS & MAP -->
         <section id="sec-plots" class="hidden space-y-4">
             <div class="flex justify-between items-center mb-2">
                 <h2 class="text-md font-bold text-emerald-800">מפת ערוגות וניהול שטחים</h2>
                 <button onclick="openPlotModal()" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold border-none cursor-pointer shadow-sm">שטח חדש +</button>
             </div>
             
-            <!-- BED MAP DISPLAY -->
             <div id="bed-map-visual" class="space-y-4 mb-6"></div>
             <div id="plots-list" class="grid gap-2"></div>
         </section>
 
-        <!-- SECTION: WORKERS -->
         <section id="sec-workers" class="hidden space-y-4">
             <div class="flex justify-between items-center mb-2">
                 <h2 class="text-md font-bold text-emerald-800">ניהול עובדים</h2>
@@ -107,7 +100,6 @@
             <div id="workers-list" class="grid gap-2"></div>
         </section>
 
-        <!-- SECTION: SUMMARY -->
         <section id="sec-summary" class="hidden space-y-4">
             <div class="card p-4 space-y-3">
                 <h2 class="text-md font-bold text-emerald-800">סיכום ועלויות</h2>
@@ -127,10 +119,8 @@
         </section>
     </main>
 
-    <!-- MODALS -->
     <div id="modal-overlay" class="hidden fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
         
-        <!-- Plot Modal -->
         <div id="plot-modal" class="hidden bg-white w-full max-w-sm rounded-2xl p-6 max-h-[90vh] overflow-y-auto">
             <h3 class="font-bold mb-4 text-emerald-900">ניהול שטח וערוגות</h3>
             <div class="space-y-3">
@@ -154,7 +144,6 @@
             </div>
         </div>
 
-        <!-- Worker Modal -->
         <div id="worker-modal" class="hidden bg-white w-full max-w-sm rounded-2xl p-6">
             <h3 class="font-bold mb-4 text-emerald-900">פרטי עובד</h3>
             <div class="space-y-3">
@@ -173,7 +162,6 @@
             </div>
         </div>
 
-        <!-- Mission Modal -->
         <div id="mission-modal" class="hidden bg-white w-full max-w-sm rounded-2xl p-6">
             <h3 class="font-bold mb-4 text-emerald-900 text-center">משימה לסידור</h3>
             <div class="space-y-3">
@@ -191,6 +179,7 @@
                 <button onclick="closeModals()" class="bg-slate-100 px-4 rounded-xl border-none cursor-pointer font-bold">ביטול</button>
             </div>
         </div>
+
         <div id="plot-map-modal" class="hidden bg-white w-full max-w-sm rounded-2xl p-6 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-4">
                 <h3 id="map-title" class="font-bold text-emerald-900">מפת שטח</h3>
@@ -205,22 +194,21 @@
     </div>
 
     <script>
-        // Use v6 for data stability
         let state = {
-            workers: JSON.parse(localStorage.getItem('f_v6_workers') || '[]'),
-            plots: JSON.parse(localStorage.getItem('f_v6_plots') || '[]'),
-            schedule: JSON.parse(localStorage.getItem('f_v6_schedule') || '{}'),
-            taskBank: JSON.parse(localStorage.getItem('f_v6_bank') || '[]'),
+            workers: JSON.parse(localStorage.getItem('f_v7_workers') || localStorage.getItem('f_v6_workers') || '[]'),
+            plots: JSON.parse(localStorage.getItem('f_v7_plots') || localStorage.getItem('f_v6_plots') || '[]'),
+            schedule: JSON.parse(localStorage.getItem('f_v7_schedule') || localStorage.getItem('f_v6_schedule') || '{}'),
+            taskBank: JSON.parse(localStorage.getItem('f_v7_bank') || localStorage.getItem('f_v6_bank') || '[]'),
             viewOffset: 0
         };
 
         let tempBedConfig = [];
 
         const sync = () => {
-            localStorage.setItem('f_v6_workers', JSON.stringify(state.workers));
-            localStorage.setItem('f_v6_plots', JSON.stringify(state.plots));
-            localStorage.setItem('f_v6_schedule', JSON.stringify(state.schedule));
-            localStorage.setItem('f_v6_bank', JSON.stringify(state.taskBank));
+            localStorage.setItem('f_v7_workers', JSON.stringify(state.workers));
+            localStorage.setItem('f_v7_plots', JSON.stringify(state.plots));
+            localStorage.setItem('f_v7_schedule', JSON.stringify(state.schedule));
+            localStorage.setItem('f_v7_bank', JSON.stringify(state.taskBank));
             render();
         };
 
@@ -235,7 +223,6 @@
             return ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'][Math.abs(hash) % 7];
         };
 
-// Navigation
         function switchTab(t) {
             ['daily', 'weekly', 'tasks', 'plots', 'workers', 'summary'].forEach(s => {
                 const el = document.getElementById('sec-' + s);
@@ -260,12 +247,11 @@
             render();
         }
 
-       function closeModals() {
+        function closeModals() {
             document.getElementById('modal-overlay').classList.add('hidden');
             ['worker-modal', 'plot-modal', 'mission-modal', 'plot-map-modal'].forEach(m => document.getElementById(m).classList.add('hidden'));
         }
 
-        // Plot Bed Logic
         function addCropConfig() {
             tempBedConfig.push({ crop: '', count: 1 });
             renderBedsEditor();
@@ -282,7 +268,6 @@
             `).join('');
         }
 
-        // CRUD Workers
         function openWorkerModal(id = null) {
             document.getElementById('modal-overlay').classList.remove('hidden');
             document.getElementById('worker-modal').classList.remove('hidden');
@@ -318,7 +303,6 @@
             if(confirm("למחוק עובד?")) { state.workers = state.workers.filter(x => x.id != document.getElementById('w-id').value); sync(); closeModals(); }
         }
 
-        // CRUD Plots
         function openPlotModal(id = null) {
             document.getElementById('modal-overlay').classList.remove('hidden');
             document.getElementById('plot-modal').classList.remove('hidden');
@@ -361,13 +345,11 @@
             if(confirm("למחוק שטח?")) { state.plots = state.plots.filter(x => x.id != document.getElementById('p-id').value); sync(); closeModals(); }
         }
 
-        // Task Bank
         function addToTaskBank() {
             const val = document.getElementById('new-bank-task').value;
             if(val) { state.taskBank.push(val); document.getElementById('new-bank-task').value = ''; sync(); }
         }
 
-        // Mission Logic
         function openMissionModal(pId) {
             const plot = state.plots.find(x => x.id == pId);
             const date = getDateStr(state.viewOffset);
@@ -453,13 +435,11 @@
             renderSummary();
         }
 
-        // פונקציה לייצור התכנון השבועי
         function renderWeekly() {
             const container = document.getElementById('weekly-container');
             if (!container) return;
             let html = '';
             
-            // רצים על 7 הימים הקרובים
             for(let i = 0; i < 7; i++) {
                 const dStr = getDateStr(i);
                 const dateObj = new Date(dStr);
@@ -486,7 +466,6 @@
             container.innerHTML = html;
         }
 
-        // פונקציה לפתיחת מפת הערוגות
         function openPlotMap(id) {
             const p = state.plots.find(x => x.id == id);
             if(!p) return;
@@ -516,14 +495,13 @@
             
             document.getElementById('map-grid').innerHTML = `<div class="grid grid-cols-3 gap-2">${bedsHtml}</div>`;
         }
-        // MAIN RENDER
+
         function render() {
             const date = getDateStr(state.viewOffset);
             document.getElementById('header-date').innerText = new Date(date).toLocaleDateString('he-IL', {weekday:'long', day:'numeric', month:'long'});
             const activeW = state.workers.filter(w => w.status === 'active');
             const currentSched = state.schedule[date] || {};
 
-            // Schedule Container
             document.getElementById('schedule-container').innerHTML = state.plots.map(p => {
                 const s = currentSched[p.id] || { workers: [], mission: '', crop: '', status: 'not_started' };
                 const border = { 'not_started': 'border-slate-200', 'partial': 'border-orange-400', 'completed': 'border-green-500' }[s.status];
@@ -541,7 +519,6 @@
                 </div>`;
             }).join('');
 
-            // Bed Map Visual
             document.getElementById('bed-map-visual').innerHTML = state.plots.map(p => {
                 const total = p.bedsTotal || 0;
                 if(total === 0) return '';
@@ -557,18 +534,17 @@
                 </div>`;
             }).join('');
 
-            // Management Lists
-           document.getElementById('plots-list').innerHTML = state.plots.map(p => `<div class="card p-3 flex justify-between items-center border-r-4 border-emerald-500 text-xs">
+            document.getElementById('workers-list').innerHTML = state.workers.map(w => `<div class="card p-3 flex justify-between items-center border-r-4 ${w.status === 'active' ? 'border-emerald-500' : 'border-slate-300'} text-xs">
+                <div><div class="font-bold">${w.name}</div><div>₪${w.wage || 0}/ש' | ${w.notes || ''}</div></div>
+                <button onclick="openWorkerModal(${w.id})" class="text-emerald-600 font-bold">ערוך</button>
+            </div>`).join('');
+
+            document.getElementById('plots-list').innerHTML = state.plots.map(p => `<div class="card p-3 flex justify-between items-center border-r-4 border-emerald-500 text-xs">
                 <div><div class="font-bold">${p.name}</div><div>${p.size}ד' | ${p.bedsTotal}ע' | ${(p.bedConfig||[]).map(c=>c.crop).join(',')}</div></div>
                 <div class="flex gap-2">
                     <button onclick="openPlotMap(${p.id})" class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-lg font-bold shadow-sm border border-emerald-200">מפה</button>
                     <button onclick="openPlotModal(${p.id})" class="text-emerald-600 font-bold px-2">ערוך</button>
                 </div>
-            </div>`).join('');
-
-            document.getElementById('plots-list').innerHTML = state.plots.map(p => `<div class="card p-3 flex justify-between items-center border-r-4 border-emerald-500 text-xs">
-                <div><div class="font-bold">${p.name}</div><div>${p.size}ד' | ${p.bedsTotal}ע' | ${(p.bedConfig||[]).map(c=>c.crop).join(',')}</div></div>
-                <button onclick="openPlotModal(${p.id})" class="text-emerald-600 font-bold">ערוך</button>
             </div>`).join('');
 
             document.getElementById('task-bank-list').innerHTML = state.taskBank.map((t, i) => `<div class="card p-2 flex justify-between items-center text-xs"><span>${t}</span><button onclick="state.taskBank.splice(${i}, 1); sync();" class="text-red-500">מחק</button></div>`).join('');
@@ -587,7 +563,6 @@
             window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
         }
 
-        // Init Dates
         const todayStr = new Date().toISOString().split('T')[0];
         document.getElementById('cost-from').value = todayStr;
         document.getElementById('cost-to').value = todayStr;
