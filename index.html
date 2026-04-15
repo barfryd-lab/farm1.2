@@ -191,6 +191,17 @@
                 <button onclick="closeModals()" class="bg-slate-100 px-4 rounded-xl border-none cursor-pointer font-bold">ביטול</button>
             </div>
         </div>
+        <div id="plot-map-modal" class="hidden bg-white w-full max-w-sm rounded-2xl p-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="map-title" class="font-bold text-emerald-900">מפת שטח</h3>
+                <button onclick="closeModals()" class="text-slate-400 text-lg font-bold">✕</button>
+            </div>
+            <div id="map-grid" class="grid gap-2"></div>
+            
+            <div class="mt-6 flex justify-end">
+                <button onclick="closeModals()" class="bg-slate-100 px-4 py-2 rounded-xl border-none cursor-pointer font-bold">סגור</button>
+            </div>
+        </div>
     </div>
 
     <script>
