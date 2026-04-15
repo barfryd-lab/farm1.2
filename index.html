@@ -235,9 +235,9 @@
             return ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'][Math.abs(hash) % 7];
         };
 
-        // Navigation
+// Navigation
         function switchTab(t) {
-            ['daily', 'tasks', 'plots', 'workers', 'summary'].forEach(s => {
+            ['daily', 'weekly', 'tasks', 'plots', 'workers', 'summary'].forEach(s => {
                 const el = document.getElementById('sec-' + s);
                 const btn = document.getElementById('tab-' + s);
                 if(el) el.classList.add('hidden');
@@ -247,7 +247,9 @@
             const activeBtn = document.getElementById('tab-' + t);
             if(activeEl) activeEl.classList.remove('hidden');
             if(activeBtn) activeBtn.className = 'px-4 py-4 text-center tab-active font-bold';
+            
             if(t === 'summary') renderSummary();
+            if(t === 'weekly') renderWeekly();
             render();
         }
 
@@ -258,9 +260,9 @@
             render();
         }
 
-        function closeModals() {
+       function closeModals() {
             document.getElementById('modal-overlay').classList.add('hidden');
-            ['worker-modal', 'plot-modal', 'mission-modal'].forEach(m => document.getElementById(m).classList.add('hidden'));
+            ['worker-modal', 'plot-modal', 'mission-modal', 'plot-map-modal'].forEach(m => document.getElementById(m).classList.add('hidden'));
         }
 
         // Plot Bed Logic
@@ -451,6 +453,69 @@
             renderSummary();
         }
 
+        // פונקציה לייצור התכנון השבועי
+        function renderWeekly() {
+            const container = document.getElementById('weekly-container');
+            if (!container) return;
+            let html = '';
+            
+            // רצים על 7 הימים הקרובים
+            for(let i = 0; i < 7; i++) {
+                const dStr = getDateStr(i);
+                const dateObj = new Date(dStr);
+                const dayName = dateObj.toLocaleDateString('he-IL', {weekday:'long', day:'numeric', month:'numeric'});
+                const sched = state.schedule[dStr] || {};
+                
+                let dayHtml = Object.keys(sched).map(pId => {
+                    const s = sched[pId];
+                    const p = state.plots.find(x => x.id == pId);
+                    if(!p || (!s.mission && s.workers.length === 0)) return '';
+                    return `<div class="text-xs bg-white p-2 rounded border mb-1 border-emerald-100">
+                        <b class="text-emerald-700">${p.name}:</b> ${s.mission || 'שיבוץ עובדים'} 
+                        ${s.crop ? `<span class="text-[10px] bg-slate-100 px-1 rounded">${s.crop}</span>` : ''}
+                    </div>`;
+                }).join('');
+                
+                if(!dayHtml) dayHtml = '<div class="text-[10px] text-slate-400">אין משימות</div>';
+                
+                html += `<div class="card p-3 mb-2 bg-emerald-50/30">
+                    <div class="font-bold text-emerald-800 border-b border-emerald-100 pb-1 mb-2">${dayName}</div>
+                    ${dayHtml}
+                </div>`;
+            }
+            container.innerHTML = html;
+        }
+
+        // פונקציה לפתיחת מפת הערוגות
+        function openPlotMap(id) {
+            const p = state.plots.find(x => x.id == id);
+            if(!p) return;
+            document.getElementById('modal-overlay').classList.remove('hidden');
+            document.getElementById('plot-map-modal').classList.remove('hidden');
+            document.getElementById('map-title').innerText = `מפת שטח - ${p.name}`;
+            
+            let bedsHtml = '';
+            let bedNumber = 1;
+            
+            (p.bedConfig || []).forEach(c => {
+                const color = getColor(c.crop);
+                for(let i=0; i<c.count; i++) {
+                    bedsHtml += `<div style="background-color:${color}; color:white;" class="p-2 rounded-lg shadow-sm text-center text-xs font-bold border border-black/10 flex flex-col justify-center min-h-[60px]">
+                        ערוגה ${bedNumber}<br><span class="text-[9px] font-normal opacity-90 mt-1">${c.crop}</span>
+                    </div>`;
+                    bedNumber++;
+                }
+            });
+            
+            while(bedNumber <= p.bedsTotal) {
+                 bedsHtml += `<div class="bg-slate-100 text-slate-400 p-2 rounded-lg text-center text-xs border border-slate-200 flex flex-col justify-center min-h-[60px]">
+                        ערוגה ${bedNumber}<br><span class="text-[9px] font-normal opacity-80 mt-1">ריק</span>
+                    </div>`;
+                    bedNumber++;
+            }
+            
+            document.getElementById('map-grid').innerHTML = `<div class="grid grid-cols-3 gap-2">${bedsHtml}</div>`;
+        }
         // MAIN RENDER
         function render() {
             const date = getDateStr(state.viewOffset);
@@ -493,9 +558,12 @@
             }).join('');
 
             // Management Lists
-            document.getElementById('workers-list').innerHTML = state.workers.map(w => `<div class="card p-3 flex justify-between items-center border-r-4 ${w.status === 'active' ? 'border-emerald-500' : 'border-slate-300'} text-xs">
-                <div><div class="font-bold">${w.name}</div><div>₪${w.wage || 0}/ש' | ${w.notes || ''}</div></div>
-                <button onclick="openWorkerModal(${w.id})" class="text-emerald-600 font-bold">ערוך</button>
+           document.getElementById('plots-list').innerHTML = state.plots.map(p => `<div class="card p-3 flex justify-between items-center border-r-4 border-emerald-500 text-xs">
+                <div><div class="font-bold">${p.name}</div><div>${p.size}ד' | ${p.bedsTotal}ע' | ${(p.bedConfig||[]).map(c=>c.crop).join(',')}</div></div>
+                <div class="flex gap-2">
+                    <button onclick="openPlotMap(${p.id})" class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-lg font-bold shadow-sm border border-emerald-200">מפה</button>
+                    <button onclick="openPlotModal(${p.id})" class="text-emerald-600 font-bold px-2">ערוך</button>
+                </div>
             </div>`).join('');
 
             document.getElementById('plots-list').innerHTML = state.plots.map(p => `<div class="card p-3 flex justify-between items-center border-r-4 border-emerald-500 text-xs">
