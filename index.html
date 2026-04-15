@@ -194,8 +194,25 @@
     </div>
 
     <script>
+const defaultWorkers = [
+            { id: 101, name: "mood", wage: "", status: "active", notes: "מוד | PHONCHAI CHAPAKDI | דרכון: AC2548580 | משימות: נורית" },
+            { id: 102, name: "nan", wage: "", status: "active", notes: "נען | ANAN GAEWPILA | דרכון: AC2532650 | עבודה עם דבורים" },
+            { id: 103, name: "bird", wage: "", status: "active", notes: "בירד | PIYAPONG SUWANMALEE | דרכון: AC2671091 | משימות: נורית | רישיון לכלים חקלאיים" },
+            { id: 104, name: "non", wage: "", status: "active", notes: "נון | GOSIN SAESONG | דרכון: AC2660722 | משימות: דדה | רישיון לכלים חקלאיים" },
+            { id: 105, name: "yu", wage: "", status: "active", notes: "יו | Saksayam Bongchan | דרכון: AD0237010 | משימות: מזיקים ומחלות" },
+            { id: 106, name: "tai", wage: "", status: "active", notes: "תאי | AUTHAI SAENSRICHAN | דרכון: AD0514050 | משימות: דדה" },
+            { id: 107, name: "nu", wage: "", status: "active", notes: "נו | ANUSON SAENNAM | דרכון: AC2797143 | משימות: לידר / איש מים | רישיון לכלים חקלאיים, רישיון גובה" },
+            { id: 108, name: "pan", wage: "", status: "active", notes: "פאן | PANYA PHUANGKOT | דרכון: AC3181630 | משימות: תחזוקת כלים חקלאיים | רישיון לכלים חקלאיים" },
+            { id: 109, name: "sam", wage: "", status: "active", notes: "סאם | SUTHON PHIOTHONG | דרכון: AC7393622 | משימות: חשמל איציק | רישיון לכלים חקלאיים, עבודה עם דבורים" },
+            { id: 110, name: "tiger", wage: "", status: "active", notes: "טייגר | AIDTIPOL VEANGCAM | דרכון: AC684505 | משימות: גבי שבת / תחזוקה יוסי | רישיון לכלים חקלאיים" },
+            { id: 111, name: "eddy", wage: "", status: "active", notes: "אדי | NETWILA THAWAT | דרכון: AC5096991 | משימות: גבי | רישיון לכלים חקלאיים" },
+            { id: 112, name: "ja", wage: "", status: "active", notes: "ג'ה | SONTHAYA JANMALA | דרכון: AC6533781 | משימות: מזיקים ומחלות" },
+            { id: 113, name: "bas", wage: "", status: "active", notes: "באס | CHAIYAPOB JANTAB | דרכון: AD2238619 | משימות: חממות" },
+            { id: 114, name: "mos", wage: "", status: "active", notes: "מוס | apisit ubuabon | דרכון: AD1285326 | משימות: נורית" }
+        ];
+
         let state = {
-            workers: JSON.parse(localStorage.getItem('f_v7_workers') || localStorage.getItem('f_v6_workers') || '[]'),
+            workers: JSON.parse(localStorage.getItem('f_v7_workers') || localStorage.getItem('f_v6_workers') || JSON.stringify(defaultWorkers)),
             plots: JSON.parse(localStorage.getItem('f_v7_plots') || localStorage.getItem('f_v6_plots') || '[]'),
             schedule: JSON.parse(localStorage.getItem('f_v7_schedule') || localStorage.getItem('f_v6_schedule') || '{}'),
             taskBank: JSON.parse(localStorage.getItem('f_v7_bank') || localStorage.getItem('f_v6_bank') || '[]'),
